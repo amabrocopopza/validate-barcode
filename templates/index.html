@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory Validation</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <style>
+        .container {
+            margin-top: 50px;
+        }
+        .product-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .matched-name {
+            font-size: 1.2rem;
+            color: #555;
+            font-weight: bold; /* Ensures 'Matched Name' is bold */
+        }
+        .product-details {
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+        .action-buttons {
+            margin-bottom: 20px;
+        }
+        /* Loading Spinner Styles */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div class="spinner-overlay" id="spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1 class="text-center">Product Validation</h1>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        
+        {% if product %}
+            <div class="action-buttons text-center">
+                <!-- Back Button -->
+                {% if session.get('last_action') %}
+                    <form method="post" action="{{ url_for('undo') }}" style="display: inline;" onsubmit="showSpinner()">
+                        <button type="submit" class="btn btn-warning">Back</button>
+                    </form>
+                {% endif %}
+                
+                <!-- Yes, No, Skip Buttons -->
+                <form method="post" style="display: inline;" onsubmit="showSpinner()">
+                    <input type="hidden" name="sku" value="{{ product['sku'] }}">
+                    <button type="submit" name="action" value="yes" class="btn btn-success">Yes</button>
+                    <button type="submit" name="action" value="no" class="btn btn-danger">No</button>
+                    <button type="submit" name="action" value="skip" class="btn btn-secondary">Skip</button>
+                </form>
+            </div>
+            
+            <!-- Display Product Name and Matched Name -->
+            <div class="text-center">
+                <div class="product-name">{{ product['product_name'] }}</div>
+                <div class="matched-name">Matched Name: {{ product['matched_name'] or 'N/A' }}</div>
+            </div>
+            
+            <div class="product-details">
+                <table class="table table-bordered">
+                    <tbody>
+                        {% for key, value in product.items() %}
+                            {% if key not in ['processed', 'product_name', 'matched_name'] %}
+                                <tr>
+                                    <th>{{ key.replace('_', ' ').title() }}</th>
+                                    <td>{{ value }}</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info" role="alert">
+                {{ message }}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+    
+    <!-- JavaScript to Handle Spinner -->
+    <script>
+        function showSpinner() {
+            document.getElementById('spinner').style.display = 'flex';
+        }
+
+        // Optionally, hide the spinner after a delay (e.g., 2 seconds)
+        window.onload = function() {
+            document.getElementById('spinner').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
