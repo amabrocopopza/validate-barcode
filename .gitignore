@@ -1,5 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.env
+*.pytest_cache/
+.coverage
+*.egg-info/
+dist/
+build/
 
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+package-lock.json
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Logs and Temporary Files
+*.log
+*.tmp
+*.swp
+
+# AWS and Cloud
+*.pem
+*.key
+.aws/
+.s3cfg
+
+# Docker
+*.pid
+.dockerignore
+docker-compose.override.yml
+
+# Git-specific files
+.git/
+.env
