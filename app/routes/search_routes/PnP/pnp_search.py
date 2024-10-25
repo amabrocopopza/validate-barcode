@@ -1,4 +1,4 @@
-# app/routes/search_routes/pnp_search.py
+# app/routes/search_routes/PnP/pnp_search.py
 
 from flask import Blueprint, request, jsonify, current_app, flash, redirect
 

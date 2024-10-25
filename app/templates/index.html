@@ -1,5 +1,3 @@
-<!-- app/templates/index.html -->
-
 <!DOCTYPE html>
 <html>
 
@@ -47,10 +45,10 @@
             </form>
         </div>
 
-        <!-- Suggestions Dropdown -->
+        <!-- Suggestions Dropdown for PnP -->
         <div class="suggestions-section mt-3">
-            <label for="suggestions-dropdown">Select a Product:</label>
-            <select class="form-control" id="suggestions-dropdown" onchange="displaySelectedProduct()">
+            <label for="pnp-suggestions-dropdown">Select a Product from PnP:</label>
+            <select class="form-control" id="pnp-suggestions-dropdown" onchange="displaySelectedProduct('pnp')">
                 <option value="">-- Select a Product --</option>
                 {% if initial_suggestions %}
                 {% for p in initial_suggestions %}
@@ -59,6 +57,16 @@
                 </option>
                 {% endfor %}
                 {% endif %}
+            </select>
+        </div>
+
+        <!-- Suggestions Dropdown for Checkers -->
+        <div class="suggestions-section mt-3">
+            <label for="checkers-suggestions-dropdown">Select a Product from Checkers:</label>
+            <select class="form-control" id="checkers-suggestions-dropdown"
+                onchange="displaySelectedProduct('checkers')">
+                <option value="">-- Select a Product --</option>
+                <!-- Options will be populated via JavaScript -->
             </select>
         </div>
 
@@ -195,78 +203,130 @@
 
             showSpinner();
 
-            $.ajax({
+            // Clear previous suggestions
+            $('#pnp-suggestions-dropdown').empty().append('<option value="">-- Select a Product --</option>');
+            $('#checkers-suggestions-dropdown').empty().append('<option value="">-- Select a Product --</option>');
+
+            // Perform both PnP and Checkers searches
+            const pnpSearch = $.ajax({
                 url: "{{ url_for('pnp.search') }}",
                 method: 'POST',
                 data: { 'search_term': searchTerm },
-                success: function (response) {
-                    hideSpinner();
-                    if (response.success) {
-                        populateSuggestions(response.products);
-                    } else {
-                        alert(response.message || 'No suggestions found.');
-                        $('.suggestions-section').hide();
-                        $('.selected-product-section').hide();
-                    }
-                },
-                error: function () {
-                    hideSpinner();
-                    alert('An error occurred while fetching suggestions.');
+            });
+
+            const checkersSearch = $.ajax({
+                url: "{{ url_for('checkers.search') }}",  // Ensure this matches the function name
+                method: 'POST',
+                data: { 'search_term': searchTerm },
+            });
+
+            $.when(pnpSearch, checkersSearch).done(function (pnpResponse, checkersResponse) {
+                hideSpinner();
+
+                // Handle PnP response
+                if (pnpResponse[0].success) {
+                    populateSuggestions('pnp', pnpResponse[0].products);
+                } else {
+                    alert(pnpResponse[0].message || 'No suggestions found from PnP.');
+                    $('#pnp-suggestions-dropdown').hide();
                 }
+
+                // Handle Checkers response
+                if (checkersResponse[0].success) {
+                    populateSuggestions('checkers', checkersResponse[0].products);
+                } else {
+                    alert(checkersResponse[0].message || 'No suggestions found from Checkers.');
+                    $('#checkers-suggestions-dropdown').hide();
+                }
+            }).fail(function () {
+                hideSpinner();
+                alert('An error occurred while fetching suggestions.');
             });
         }
 
         // Populate Suggestions Dropdown
-        function populateSuggestions(products) {
-            const dropdown = $('#suggestions-dropdown');
+        function populateSuggestions(source, products) {
+            let dropdownId = '';
+            if (source === 'pnp') {
+                dropdownId = '#pnp-suggestions-dropdown';
+            } else if (source === 'checkers') {
+                dropdownId = '#checkers-suggestions-dropdown';
+            }
+
+            const dropdown = $(dropdownId);
             dropdown.empty();
             dropdown.append('<option value="">-- Select a Product --</option>');
             products.forEach(product => {
-                const option = `
-                    <option value="${product.code}">
-                        ${escapeHtml(product.name)} - ${escapeHtml(product.price)}
-                    </option>
-                `;
-                dropdown.append(option);
+                if (source === 'pnp') {
+                    const option = `<option value="${product.code}">${escapeHtml(product.name)} - ${escapeHtml(product.price)}</option>`;
+                    dropdown.append(option);
+                } else if (source === 'checkers') {
+                    const option = `<option value="${product.href}">${escapeHtml(product.name)} - R${escapeHtml(product.price)}</option>`;
+                    dropdown.append(option);
+                }
             });
-            $('.suggestions-section').show();
+            dropdown.show();
             $('.selected-product-section').hide();
         }
 
         // Display Selected Product Details
-        function displaySelectedProduct() {
-            const selectedOption = $('#suggestions-dropdown').find(':selected');
-            const sku = selectedOption.val();
-            if (sku === '') {
+        function displaySelectedProduct(source) {
+            let dropdownId = '';
+            if (source === 'pnp') {
+                dropdownId = '#pnp-suggestions-dropdown';
+            } else if (source === 'checkers') {
+                dropdownId = '#checkers-suggestions-dropdown';
+            }
+
+            const selectedOption = $(dropdownId).find(':selected');
+            const identifier = selectedOption.val();
+            if (identifier === '') {
                 $('.selected-product-section').hide();
                 return;
             }
 
-            // Set the SKU in the hidden input field
-            $('#action-sku').val(sku);
+            // Set the SKU or href in the hidden input field
+            $('#action-sku').val(identifier);
 
-            // Show spinner while fetching barcode and details
+            // Show spinner while fetching details
             showSpinner();
 
-            // Fetch barcode and other details via AJAX
+            // Fetch product details via AJAX
+            let fetchUrl = '';
+            let data = {};
+            if (source === 'pnp') {
+                fetchUrl = "{{ url_for('pnp.fetch_barcode') }}";
+                data = { 'product_code': identifier };
+            } else if (source === 'checkers') {
+                fetchUrl = "{{ url_for('checkers.fetch_details') }}";  // Ensure this matches the function name
+                data = { 'href': identifier };
+            }
+
             $.ajax({
-                url: "{{ url_for('pnp.fetch_barcode') }}",
+                url: fetchUrl,
                 method: 'POST',
-                data: { 'product_code': sku },
+                data: data,
                 success: function (response) {
                     hideSpinner();
                     if (response.success) {
-                        // Update fields with response data
-                        $('#selected-product-name').text(response.product_name || 'N/A');
-                        $('#price-display').text(response.price_formatted || 'R0.00');
+                        let productInfo = {};
+                        if (source === 'pnp') {
+                            productInfo = response;
+                        } else if (source === 'checkers') {
+                            productInfo = response.product_info;
+                        }
+
+                        // Update fields with productInfo data
+                        $('#selected-product-name').text(productInfo.product_name || 'N/A');
+                        $('#price-display').text(productInfo.product_price ? 'R' + productInfo.product_price : productInfo.price_formatted || 'R0.00');
 
                         // Retrieve retail_price from the main product table
-                        const mainProductRow = $(`#main-product-${sku}`);
+                        const mainProductRow = $('#main-product-{{ product['sku'] }}');
                         const retailPriceText = mainProductRow.find('td').eq(3).text(); // 4th column is retail_price
                         const retailPrice = parseFloat(retailPriceText.replace('R', '')) || 0;
 
-                        // priceValue from AJAX response
-                        const priceValue = parseFloat(response.price_value) || 0;
+                        // priceValue from productInfo
+                        const priceValue = parseFloat(productInfo.product_price || productInfo.price_value || 0) || 0;
                         const difference = priceValue - retailPrice;
 
                         if (difference < 0) {
@@ -277,16 +337,17 @@
                             $('#price-difference').text('R0.00');
                         }
 
-                        $('#barcode-display').text(response.barcode || 'N/A');
-                        $('#description-display').text(response.description || 'No description available.');
-                        $('#brand-display').text(response.brand || 'N/A');
-                        $('#brand-seller-id-display').text(response.brandSellerId || 'N/A');
-                        $('#unit-of-measure-display').text(response.defaultUnitOfMeasure || 'N/A');
+                        $('#barcode-display').text(productInfo.barcode || 'N/A');
+                        $('#description-display').text(productInfo.description || 'No description available.');
+                        $('#brand-display').text(productInfo.product_brand || productInfo.brand || 'N/A');
+                        $('#brand-seller-id-display').text(productInfo.brandSellerId || 'N/A');
+                        $('#unit-of-measure-display').text(productInfo.unit_of_measure || productInfo.defaultUnitOfMeasure || 'N/A');
 
                         // Handle Images Carousel
-                        if (response.imageUrls && response.imageUrls.length > 0) {
+                        if (productInfo.imageUrls && productInfo.imageUrls.length > 0) {
+                            // For PnP
                             let carouselItems = '';
-                            response.imageUrls.forEach((url, index) => {
+                            productInfo.imageUrls.forEach((url, index) => {
                                 carouselItems += `
                                     <div class="carousel-item ${index === 0 ? 'active' : ''}">
                                         <img src="${escapeHtml(url)}" class="d-block w-100" alt="Product Image">
@@ -310,13 +371,16 @@
                                 </div>
                             `;
                             $('#image-carousel').html(carouselHtml);
+                        } else if (productInfo.product_image_url) {
+                            // For Checkers, display the single product image
+                            const imgHtml = `<img src="${escapeHtml(productInfo.product_image_url)}" class="img-fluid" alt="Product Image">`;
+                            $('#image-carousel').html(imgHtml);
                         } else {
                             $('#image-carousel').text('No image available.');
                         }
 
                         $('.selected-product-section').show();
                     } else {
-                        // If fetching details failed, show error and hide details section
                         alert(response.message || 'Failed to fetch product details.');
                         $('.selected-product-section').hide();
                     }
@@ -352,9 +416,12 @@
                 performSearch();  // Call without event
             }
 
-            // Attach event listener to the suggestions dropdown
-            $('#suggestions-dropdown').change(function () {
-                displaySelectedProduct();
+            // Attach event listener to the suggestions dropdowns
+            $('#pnp-suggestions-dropdown').change(function () {
+                displaySelectedProduct('pnp');
+            });
+            $('#checkers-suggestions-dropdown').change(function () {
+                displaySelectedProduct('checkers');
             });
         });
     </script>

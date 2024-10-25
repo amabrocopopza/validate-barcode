@@ -1,3 +1,5 @@
+# /app/utils/workflow.py
+
 from flask import flash, redirect, url_for, session, current_app
 from .inventory import load_inventory, save_inventory
 import pandas as pd
