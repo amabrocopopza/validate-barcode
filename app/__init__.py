@@ -1,9 +1,8 @@
+# app/__init__.py
 
-from flask import Flask, session  # Added 'session' import
+from flask import Flask, session
 from .config import Config
-from .routes.main import main_bp
-from .routes.suggestions import suggestions_bp
-from .routes.undo import undo_bp
+from .routes import register_blueprints
 from dotenv import load_dotenv
 import os
 from logging.handlers import RotatingFileHandler
@@ -29,12 +28,8 @@ def create_app():
     app.logger.setLevel(logging.INFO)
     app.logger.info('Inventory Validation Startup')
     
-    # Initialize S3 client and other utilities if needed
-    
     # Register Blueprints
-    app.register_blueprint(main_bp)
-    app.register_blueprint(suggestions_bp)
-    app.register_blueprint(undo_bp)
+    register_blueprints(app)
     
     # Initialize other components like HTTPBasicAuth here if needed
     

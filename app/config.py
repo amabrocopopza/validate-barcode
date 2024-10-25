@@ -19,10 +19,7 @@ class Config:
     # Flask configurations
     SECRET_KEY = os.getenv('SECRET_KEY', 'your_secret_key')  # Replace with a secure key
 
-    # MongoDB Configuration
-    MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
-    MONGODB_DB_NAME = os.getenv('MONGODB_DB_NAME', 'your_database_name')
-    MONGODB_COLLECTION_NAME = os.getenv('MONGODB_COLLECTION_NAME', 'your_collection_name')
+
     # S3 Keys based on environment
     S3_KEY_MAIN_INVENTORY = os.getenv(
         f'S3_KEY_MAIN_INVENTORY_{ENVIRONMENT.upper()}',

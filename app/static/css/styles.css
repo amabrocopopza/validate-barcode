@@ -1,0 +1,92 @@
+/* validate-barcode/app/static/css/styles.css
+/* Existing CSS */
+.container {
+    margin-top: 50px;
+}
+
+.product-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.product-details {
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+.action-buttons {
+    margin-bottom: 20px;
+}
+
+/* Loading Spinner Styles */
+.spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    display: none;
+    /* Hidden by default */
+}
+
+/* Suggestion Dropdown Styles */
+.suggestion-item {
+    display: flex;
+    align-items: center;
+}
+
+.suggestion-item img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    margin-right: 10px;
+}
+
+.suggestion-price {
+    margin-left: auto;
+    font-weight: bold;
+}
+
+.barcode-image {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.barcode-image img {
+    max-width: 200px;
+    height: auto;
+}
+
+/* Main Product Table Styles */
+.main-product-table-section {
+    margin-top: 50px;
+}
+
+/* Difference Text Styles */
+.difference-positive {
+    color: red;
+    font-weight: bold;
+}
+
+.difference-negative {
+    color: green;
+    font-weight: bold;
+}
+
+/* Image Carousel Styles */
+.carousel-inner img {
+    width: 100%;
+    height: auto;
+}
+
+/* Always show carousel controls */
+.carousel-control-prev,
+.carousel-control-next {
+    opacity: 1;
+    visibility: visible;
+}
