@@ -124,7 +124,7 @@ def fetch_barcode():
         else:
             retail_price = 0.0  # Default value if not found
 
-        current_app.logger.info(f"Retail price for SKU {sku}: {retail_price}")
+
 
         # Extract formatted price from product_details
         price_formatted = product_details.get('price', {}).get('formattedValue', 'R0.00')

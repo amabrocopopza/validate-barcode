@@ -1,92 +1,134 @@
-/* validate-barcode/app/static/css/styles.css
-/* Existing CSS */
-.container {
-    margin-top: 50px;
-}
-
-.product-name {
-    font-size: 1.5rem;
-    font-weight: bold;
-}
-
-.product-details {
-    margin-top: 20px;
-    margin-bottom: 30px;
-}
-
-.action-buttons {
-    margin-bottom: 20px;
-}
-
-/* Loading Spinner Styles */
+/* Spinner Overlay */
 .spinner-overlay {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.8);
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
-    display: none;
-    /* Hidden by default */
 }
 
-/* Suggestion Dropdown Styles */
-.suggestion-item {
-    display: flex;
-    align-items: center;
+/* Product Card */
+.product-card {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-top: 15px;
+    background-color: #f9f9f9;
 }
 
-.suggestion-item img {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    margin-right: 10px;
+/* Product Image */
+.product-image {
+    max-width: 50%;
+    height: auto;
+    cursor: pointer;
 }
 
-.suggestion-price {
-    margin-left: auto;
-    font-weight: bold;
-}
-
-.barcode-image {
+/* Action Buttons */
+.action-buttons {
     margin-top: 20px;
     text-align: center;
 }
 
-.barcode-image img {
-    max-width: 200px;
-    height: auto;
+/* Progress Indicators */
+.progress-indicators {
+    margin-top: 15px;
 }
 
-/* Main Product Table Styles */
-.main-product-table-section {
-    margin-top: 50px;
+/* Copy Field Button */
+.copy-field-btn {
+    margin-left: 10px;
+    cursor: pointer;
+    color: #007bff;
 }
 
-/* Difference Text Styles */
-.difference-positive {
-    color: red;
-    font-weight: bold;
+.copy-field-btn:hover {
+    text-decoration: underline;
 }
 
+/* Price Difference Styling */
 .difference-negative {
+    color: red;
+}
+
+.difference-positive {
     color: green;
-    font-weight: bold;
 }
 
-/* Image Carousel Styles */
-.carousel-inner img {
+/* Hide Save and Revert Buttons Initially */
+#save-changes-btn,
+#revert-changes-btn {
+    display: none;
+}
+
+/* Positioning Search Bars */
+.search-section-top {
+    margin-top: 20px;
+}
+
+.search-section-dropdown {
+    margin-top: 20px;
+}
+
+/* Modal Image */
+.modal-img {
     width: 100%;
-    height: auto;
 }
 
-/* Always show carousel controls */
-.carousel-control-prev,
-.carousel-control-next {
-    opacity: 1;
-    visibility: visible;
+/* Responsive Adjustments */
+@media (max-width: 767.98px) {
+    .product-image {
+        max-width: 100%;
+    }
+}
+
+/* Card Styles */
+.card {
+    margin-top: 20px;
+    border: 1px solid #ddd;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+    background-color: #f9f9f9;
+}
+
+/* Background Color */
+body {
+    background-color: #f0f2f5;
+}
+
+/* Adjust container for larger screens */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1400px;
+    }
+}
+
+/* Adjust image sizes */
+@media (min-width: 992px) {
+    .product-image {
+        max-width: 70%;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .product-image {
+        max-width: 100%;
+    }
+}
+
+/* Make labels bold and larger */
+#main-product-info label {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #333;
+}
+
+/* Centering the Main Product Information label */
+#main-product-info h3 {
+    text-align: center;
 }
