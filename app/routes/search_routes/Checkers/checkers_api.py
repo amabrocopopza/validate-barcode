@@ -3,7 +3,7 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-from flask import current_app as app
+from flask import Blueprint, request, jsonify, current_app as app
 
 # Initialize the session
 session = requests.Session()
@@ -16,7 +16,12 @@ HEADERS = {
 
 BASE_URL = 'https://www.checkers.co.za'
 
+checkers_bp = Blueprint('checkers', __name__, url_prefix='/checkers')
+
 def fetch_product_suggestions(term):
+    """
+    Fetch product suggestions based on the search term.
+    """
     # Initial request to get cookies
     try:
         session.get(BASE_URL, headers=HEADERS)
@@ -45,12 +50,17 @@ def fetch_product_suggestions(term):
             href = product.find('a', href=True)['href']
             results.append({'name': name, 'price': price, 'href': href})
         except json.JSONDecodeError:
-            continue
-        except Exception:
-            continue
+            app.logger.warning("JSON decode error for product data.")
+            continue  # Skip if JSON is invalid
+        except Exception as e:
+            app.logger.warning(f"Unexpected error parsing product: {e}")
+            continue  # Skip if there's any other issue parsing the product
     return results
 
 def fetch_product_details(href):
+    """
+    Fetch detailed product information based on the product href.
+    """
     product_url = f"{BASE_URL}{href}"
     try:
         response = session.get(product_url, headers=HEADERS)
@@ -63,7 +73,7 @@ def fetch_product_details(href):
 
     product_info = {}
 
-    # Extract product details
+    # Extract product details from the product information table
     table = soup.find('table', class_='pdp__product-information')
     if table:
         for row in table.find_all('tr'):
@@ -98,9 +108,12 @@ def fetch_product_details(href):
     for script_tag in script_tags:
         try:
             script_content = script_tag.string
+            if not script_content:
+                continue  # Skip if script content is None
+
             # Extract the content inside dataLayer.push(...)
             data_layer_content = script_content.split('dataLayer.push(')[1].split(');')[0]
-            # Replace single quotes with double quotes
+            # Replace single quotes with double quotes for valid JSON
             data_layer_content = data_layer_content.replace("'", '"')
             # Remove trailing commas (invalid in JSON)
             data_layer_content = data_layer_content.replace(',}', '}').replace(',]', ']')
@@ -113,8 +126,8 @@ def fetch_product_details(href):
                 product_info['category'] = product_data.get('category', 'N/A')
                 product_info['product_image_url'] = product_data.get('product_image_url', 'N/A')
                 break  # Found the data, no need to continue
-        except Exception as e:
-            app.logger.error(f"Error parsing dataLayer in Checkers product page: {str(e)}")
+        except (IndexError, KeyError, json.JSONDecodeError) as e:
+            app.logger.error(f"Error parsing dataLayer in Checkers product page: {e}")
             continue
 
     # If still no image, try to extract from meta tags
@@ -123,4 +136,38 @@ def fetch_product_details(href):
         if meta_image and meta_image.get('content'):
             product_info['product_image_url'] = meta_image['content']
 
+    # Ensure category is present
+    if 'category' not in product_info:
+        product_info['category'] = 'N/A'
+
     return product_info
+
+@checkers_bp.route('/search', methods=['POST'])
+def search():
+    """
+    Handle search requests and return product suggestions.
+    """
+    term = request.form.get('search_term', '').strip()
+    if not term:
+        return jsonify({'success': False, 'message': 'No search term provided.'}), 400
+
+    suggestions = fetch_product_suggestions(term)
+    if not suggestions:
+        return jsonify({'success': False, 'message': 'No products found from Checkers.'}), 404
+
+    return jsonify({'success': True, 'products': suggestions}), 200
+
+@checkers_bp.route('/fetch_details', methods=['POST'])
+def fetch_details():
+    """
+    Fetch detailed product information based on href and return it.
+    """
+    href = request.form.get('href', '').strip()
+    if not href:
+        return jsonify({'success': False, 'message': 'No product href provided.'}), 400
+
+    product_info = fetch_product_details(href)
+    if not product_info:
+        return jsonify({'success': False, 'message': 'Failed to fetch product details from Checkers.'}), 500
+
+    return jsonify({'success': True, 'product_info': product_info}), 200

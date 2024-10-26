@@ -262,10 +262,14 @@ $(document).ready(function () {
 
                     // Build product details HTML
                     let imageUrl = '';
-                    if (productInfo.imageUrls && productInfo.imageUrls.length > 0) {
-                        imageUrl = productInfo.imageUrls[0];
-                    } else if (productInfo.product_image_url) {
-                        imageUrl = productInfo.product_image_url;
+                    if (source === 'pnp') {
+                        if (productInfo.imageUrls && productInfo.imageUrls.length > 0) {
+                            imageUrl = productInfo.imageUrls[0];
+                        }
+                    } else if (source === 'checkers') {
+                        if (productInfo.product_image_url && productInfo.product_image_url !== 'N/A') {
+                            imageUrl = productInfo.product_image_url;
+                        }
                     }
 
                     let detailsHtml = `
@@ -282,8 +286,9 @@ $(document).ready(function () {
                         </p>
                         <p><strong>Brand:</strong> ${escapeHtml(productInfo.brand || productInfo.product_brand || 'N/A')}
                             <span class="copy-field-btn" data-field="brand_name" data-value="${escapeHtml(productInfo.brand || productInfo.product_brand || '')}">[Copy]</span>
+                        <p><strong>Category:</strong> ${escapeHtml(decodeHtml(productInfo.category || 'N/A'))}
+                            <span class="copy-field-btn" data-field="product-category" data-value="${escapeHtml(productInfo.category || '')}">[Copy]</span>
                         </p>
-                        <p><strong>Unit of Measure:</strong> ${escapeHtml(productInfo.defaultUnitOfMeasure || productInfo.unit_of_measure || 'N/A')}</p>
                     `;
                     $(detailsDivId).html(detailsHtml);
 
@@ -408,6 +413,8 @@ $(document).ready(function () {
         }
     });
 
+
+
     // Utility function to escape HTML to prevent XSS
     function escapeHtml(text) {
         if (!text) return '';
@@ -421,4 +428,12 @@ $(document).ready(function () {
     // Perform initial search on page load
     $('#search-term').val(window.initialProductName);
     performSearch();
+
+    // Utility function to decode HTML entities
+    function decodeHtml(text) {
+        if (!text) return '';
+        var txt = document.createElement("textarea");
+        txt.innerHTML = text;
+        return txt.value;
+    }
 });
