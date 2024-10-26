@@ -73,7 +73,6 @@ def fetch_barcode():
             current_app.logger.warning("No product code provided in fetch_barcode request.")
             return jsonify({'success': False, 'message': 'No product code provided.'}), 400
 
-        current_app.logger.info(f"Fetching details for product_code: {product_code}")
         product_details = fetch_product_details(product_code)
         if not product_details:
             current_app.logger.error(f"Failed to fetch product details for product_code: {product_code}")
@@ -114,15 +113,7 @@ def fetch_barcode():
         elif isinstance(images, str):
             image_urls.append(images)
 
-        # Load main inventory to get Retail Price
-        main_inventory = load_inventory(current_app.config['S3_KEY_MAIN_INVENTORY'])
-        # Assuming 'sku' is the identifier in main_inventory and 'retail_price' is the column name
-        sku = product_details.get('sku') or product_code  # Adjust based on actual data structure
-        retail_price = main_inventory.loc[main_inventory['sku'] == sku, 'retail_price'].values
-        if len(retail_price) > 0:
-            retail_price = float(retail_price[0])
-        else:
-            retail_price = 0.0  # Default value if not found
+
 
 
 
@@ -138,7 +129,7 @@ def fetch_barcode():
             'description': description,
             'brand': brand,
             'brandSellerId': brandSellerId,
-            'defaultUnitOfMeasure': defaultUnitOfMeasure,
+            'unit_of_measure': defaultUnitOfMeasure,
             'imageUrls': image_urls,
             'product_name': product_name,
             'price_formatted': price_formatted,

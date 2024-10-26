@@ -1,0 +1,57 @@
+<!-- templates/data_preview.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ file_type.capitalize() }} File Preview - My App{% endblock %}
+
+{% block content %}
+<h2>{{ file_type.capitalize() }} File Preview</h2>
+<div class="mb-3">
+    <button id="toggle-edit-btn" class="btn btn-primary">Unlock for Editing</button>
+</div>
+<div class="table-responsive">
+    <table id="data-table" class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                {% for column in columns %}
+                <th>{{ column.replace('_', ' ').capitalize() }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+            <tr>
+                {% for column in columns %}
+                <td contenteditable="false">{{ row[column] }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    $(document).ready(function () {
+        $('#data-table').DataTable({
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "info": true
+        });
+
+        $('#toggle-edit-btn').on('click', function () {
+            var isEditable = $(this).data('editable') || false;
+            if (!isEditable) {
+                $('#data-table td').attr('contenteditable', 'true');
+                $(this).text('Lock Editing');
+            } else {
+                $('#data-table td').attr('contenteditable', 'false');
+                $(this).text('Unlock for Editing');
+            }
+            $(this).data('editable', !isEditable);
+        });
+    });
+</script>
+{% endblock %}

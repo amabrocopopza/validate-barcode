@@ -1,0 +1,14 @@
+<!-- templates/landing.html -->
+{% extends "base.html" %}
+
+{% block title %}Home - My App{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">Welcome to the Product Validation App!</h1>
+    <p class="lead">Use the navigation bar to access different sections of the application.</p>
+    <hr class="my-4">
+    <p>Start validating products, preview your inventory, and manage your data efficiently.</p>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('main.product_validation') }}" role="button">Get Started</a>
+</div>
+{% endblock %}

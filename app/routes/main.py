@@ -13,10 +13,8 @@ main_bp = Blueprint('main', __name__)
 @auth.login_required
 def index():
     try:
-        # Load main inventory using the configured S3 key
+        # Load main inventory only once
         main_inventory = load_inventory(current_app.config['S3_KEY_MAIN_INVENTORY'], inventory_type='main')
-
-        # Load finalized inventory to count processed products
         finalized_inventory = load_inventory(current_app.config['S3_KEY_FINALIZED_INVENTORY'], inventory_type='finalized')
 
         # Reset stale processing flags
@@ -184,42 +182,38 @@ def process_product():
             main_inventory.at[idx, 'product_category'] = request.form.get('product_category')
             main_inventory.at[idx, 'retail_price'] = float(request.form.get('price')) if request.form.get('price') else 0.0
             main_inventory.at[idx, 'barcode'] = request.form.get('barcode')
-            # Save to S3
-            save_inventory(main_inventory, current_app.config['S3_KEY_MAIN_INVENTORY'])
-            flash('Changes have been saved.', 'success')
 
-        elif action == 'flag':
-            main_inventory.at[idx, 'flagged'] = True  # Mark the product as flagged
-            main_inventory.at[idx, 'processed'] = True  # Mark as processed
+            # Mark as processed
+            main_inventory.at[idx, 'processed'] = True
             main_inventory.at[idx, 'processing'] = False
             main_inventory.at[idx, 'assigned_to'] = None
             main_inventory.at[idx, 'processing_timestamp'] = None
 
             # Append to finalized inventory
-            finalized_inventory = finalized_inventory.append(main_inventory.loc[idx])
+            finalized_inventory = finalized_inventory.append(main_inventory.loc[idx], ignore_index=True)
             save_inventory(finalized_inventory, current_app.config['S3_KEY_FINALIZED_INVENTORY'])
 
             # Remove from main inventory
-            main_inventory = main_inventory.drop(idx)
+            main_inventory = main_inventory.drop(idx).reset_index(drop=True)
             save_inventory(main_inventory, current_app.config['S3_KEY_MAIN_INVENTORY'])
-            flash('Product has been flagged and marked as processed.', 'warning')
+
+            flash('Changes have been saved and product has been moved to finalized inventory.', 'success')
+            return redirect(url_for('main.index'))
+
+        elif action == 'flag':
+            # Existing flag logic...
+
             return redirect(url_for('main.index'))
 
         elif action == 'skip':
-            # Reset processing flags so it can be reviewed again
-            main_inventory.at[idx, 'processing'] = False
-            main_inventory.at[idx, 'assigned_to'] = None
-            main_inventory.at[idx, 'processing_timestamp'] = None
-            # Save to S3
-            save_inventory(main_inventory, current_app.config['S3_KEY_MAIN_INVENTORY'])
-            flash('Product has been skipped and moved to the next one.', 'info')
+            # Existing skip logic...
+
             return redirect(url_for('main.index'))
 
         else:
             flash('Invalid action.', 'danger')
             return redirect(url_for('main.index'))
 
-        return redirect(url_for('main.index'))
     except Exception as e:
         current_app.logger.error(f"Error in process_product route: {str(e)}")
         flash('An error occurred while processing your request.', 'danger')
@@ -259,3 +253,5 @@ def search_main_inventory():
     except Exception as e:
         current_app.logger.error(f"Error in search_main_inventory route: {str(e)}")
         return jsonify({'success': False, 'message': 'An error occurred while searching the inventory.'}), 500
+    
+    

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Product Validation - My App{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center mt-4">Product Validation</h1>
+
+        <!-- Top Search Section for Main Inventory -->
+        <div class="search-section-top">
+            <form id="top-search-form" method="POST" action="{{ url_for('main.search_main_inventory') }}"
+                class="form-inline justify-content-center">
+                {{ csrf_token() }}
+                <div class="form-group mb-2">
+                    <label for="top-search-term" class="sr-only">Search Inventory</label>
+                    <input type="text" class="form-control" id="top-search-term" name="search_term"
+                        placeholder="Search Main Inventory" required>
+                </div>
+                <button type="submit" class="btn btn-secondary mb-2 ml-2">Search Inventory</button>
+            </form>
+        </div>
+
+        <!-- Main Product Information -->
+        <div id="main-product-info" class="mt-4 card">
+            <div class="card-body">
+                <h3 class="text-center">Main Product Information</h3>
+                <h4 class="font-weight-bold text-center">{{ current_product_record.product_name }}</h4>
+                <div class="text-center">
+                    <img src="{{ current_product_record.image_url }}" alt="Main Product Image"
+                        class="product-image mb-3 img-fluid" data-toggle="modal" data-target="#imageModal">
+                </div>
+                <form id="main-product-form" method="POST" action="{{ url_for('main.product_validation') }}">
+                    {{ csrf_token() }}
+                    <input type="hidden" name="sku" value="{{ current_product_record.sku }}">
+
+                    <div class="form-group">
+                        <label for="main-product-name">Product Name:</label>
+                        <input type="text" id="main-product-name" name="product_name" class="form-control"
+                            value="{{ current_product_record.product_name | safe }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="main-description">Description:</label>
+                        <textarea id="main-description" name="description" class="form-control" rows="3"
+                            required>{{ current_product_record.description | striptags }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="main-brand-name">Supplier:</label>
+                        <input type="text" id="main-brand-name" name="brand_name" class="form-control"
+                            value="{{ current_product_record.brand_name }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="main-product-category">Product Category:</label>
+                        <input type="text" id="main-product-category" name="product_category" class="form-control"
+                            value="{{ current_product_record.product_category }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="main-price">Price (R):</label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" id="main-price" name="price" class="form-control"
+                                value="{{ current_product_record.retail_price }}" required>
+                            <div class="input-group-append">
+                                <button id="copy-price-btn" class="btn btn-outline-secondary" type="button">Copy
+                                    Selected</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="main-sku">SKU:</label>
+                        <input type="text" id="main-sku" name="sku_display" class="form-control"
+                            value="{{ current_product_record.sku }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="main-barcode">Barcode:</label>
+                        <input type="text" id="main-barcode" name="barcode" class="form-control"
+                            value="{{ current_product_record.barcode }}" placeholder="Enter Barcode Manually">
+                    </div>
+                    <!-- Additional fields as needed -->
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons mt-3">
+                        <button type="submit" name="action" value="save_changes" id="save-changes-btn"
+                            class="btn btn-success" style="display: none;">Save Changes</button>
+                        <button type="button" id="revert-changes-btn" class="btn btn-warning">Revert Changes</button>
+                        <button type="submit" name="action" value="flag" class="btn btn-danger">Flag</button>
+                        <button type="submit" name="action" value="skip" class="btn btn-secondary">Skip</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Search Section for PnP and Checkers -->
+        <div class="row mt-3">
+            <div class="col text-center">
+                <form id="dropdown-search-form" method="POST" action="{{ url_for('main.search_main_inventory') }}"
+                    class="form-inline justify-content-center">
+                    {{ csrf_token() }}
+                    <div class="form-group mb-2">
+                        <label for="search-term" class="sr-only">Search Term</label>
+                        <input type="text" class="form-control" id="search-term" name="search_term"
+                            placeholder="Enter product name">
+                    </div>
+                    <button type="submit" class="btn btn-secondary mb-2 ml-2">Search</button>
+                    <button type="button" id="show-top-suggestions-btn" class="btn btn-info btn-sm mb-2 ml-2">Show Top
+                        Suggestions</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Side-by-Side Product Comparison -->
+        <div class="row mt-2">
+            <!-- PnP Section -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>PnP Products</h3>
+                        <!-- Dropdown and Product Details -->
+                        <select id="pnp-dropdown" class="form-control">
+                            <option value="">-- Select a PnP Product --</option>
+                            {% for product in initial_suggestions %}
+                            <option value="{{ product.code }}">{{ product.name }} - R{{ product.price }}</option>
+                            {% endfor %}
+                        </select>
+                        <!-- Product Details -->
+                        <div id="pnp-product-details" class="product-card">
+                            <!-- Spinner -->
+                            <div class="product-spinner" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                            </div>
+                            <!-- Product details will be displayed here -->
+                        </div>
+                        <!-- Price Difference -->
+                        <div id="pnp-price-difference" class="price-difference mt-2" style="display: none;">
+                            <strong>Price Difference:</strong> <span id="pnp-price-diff-value"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checkers Section -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Checkers Products</h3>
+                        <!-- Dropdown and Product Details -->
+                        <select id="checkers-dropdown" class="form-control">
+                            <option value="">-- Select a Checkers Product --</option>
+                            {% for product in initial_suggestions %}
+                            <option value="{{ product.code }}">{{ product.name }} - R{{ product.price }}</option>
+                            {% endfor %}
+                        </select>
+                        <!-- Product Details -->
+                        <div id="checkers-product-details" class="product-card">
+                            <!-- Spinner -->
+                            <div class="product-spinner" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                            </div>
+                            <!-- Product details will be displayed here -->
+                        </div>
+                        <!-- Price Difference -->
+                        <div id="checkers-price-difference" class="price-difference mt-2" style="display: none;">
+                            <strong>Price Difference:</strong> <span id="checkers-price-diff-value"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deeliver Section -->
+        <div class="row mt-2">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Deeliver Products</h3>
+                        <!-- Dropdown and Product Details -->
+                        <select id="deeliver-dropdown" class="form-control">
+                            <option value="">-- Select a Deeliver Product --</option>
+                            {% for product in deeliver_products %}
+                            <option value="{{ product.code }}">{{ product.name }} - R{{ product.price if product.price
+                                else 'N/A' }}</option>
+                            {% endfor %}
+                        </select>
+                        <!-- Product Details -->
+                        <div id="deeliver-product-details" class="product-card">
+                            <!-- Spinner -->
+                            <div class="product-spinner" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                            </div>
+                            <!-- Product details will be displayed here -->
+                        </div>
+                        <!-- Price Difference -->
+                        <div id="deeliver-price-difference" class="price-difference mt-2" style="display: none;">
+                            <strong>Price Difference:</strong> <span id="deeliver-price-diff-value"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Percentage Adjustment Modal -->
+        <div class="modal fade" id="percentageModal" tabindex="-1" role="dialog" aria-labelledby="percentageModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <!-- Modal content here -->
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="percentageModalLabel">Adjust Price</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <label for="percentage-slider">Adjust by Percentage:</label>
+                        <input type="range" id="percentage-slider" min="-50" max="50" value="0">
+                        <span id="percentage-value">0%</span>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" id="apply-percentage-btn" class="btn btn-primary">Apply</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Modal -->
+        <div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <img src="" id="modal-image" class="modal-img img-fluid" alt="Product Image">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Include JavaScript files -->
+        <!-- Define global variables for scripts.js -->
+        <script type="text/javascript">
+            var pnpFetchProductDetailsUrl = "{{ url_for('pnp.fetch_barcode') }}"; // Corrected
+            var pnpSearchUrl = "{{ url_for('pnp.search') }}";
+            var checkersFetchDetailsUrl = "{{ url_for('checkers.fetch_details') }}";
+            var checkersSearchUrl = "{{ url_for('checkers.search') }}";
+            var processProductUrl = "{{ url_for('main.process_product') }}";
+            var deeliverSearchUrl = "{{ url_for('deeliver.search') }}";
+            var deeliverFetchDetailsUrl = "{{ url_for('deeliver.fetch_details') }}";
+
+            window.initialProductName = "{{ current_product_record.product_name | escape }}";
+            window.initialDescription = "{{ current_product_record.description | striptags | escape }}";
+            window.initialBrandName = "{{ current_product_record.brand_name | escape }}";
+            window.initialProductCategory = "{{ current_product_record.product_category | escape }}";
+            window.initialPrice = "{{ current_product_record.retail_price | escape }}";
+        </script>
+        <!-- Include jQuery first -->
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+        <!-- Include Bootstrap JS and dependencies -->
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.bundle.min.js"></script>
+        <!-- Custom JS -->
+        <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+
+        <!-- JavaScript for Form Handling and Dropdowns -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                // Save Changes Button Visibility
+                const form = document.getElementById('main-product-form');
+                const saveButton = document.getElementById('save-changes-btn');
+                const revertButton = document.getElementById('revert-changes-btn');
+
+                const originalValues = {};
+                Array.from(form.elements).forEach(function (element) {
+                    if (element.name) {
+                        originalValues[element.name] = element.value;
+                    }
+                });
+
+                form.addEventListener('input', function () {
+                    let hasChanges = false;
+                    Array.from(form.elements).forEach(function (element) {
+                        if (element.name && element.value !== originalValues[element.name]) {
+                            hasChanges = true;
+                        }
+                    });
+                    saveButton.style.display = hasChanges ? 'inline-block' : 'none';
+                });
+
+                // Revert Changes Functionality
+                revertButton.addEventListener('click', function () {
+                    Array.from(form.elements).forEach(function (element) {
+                        if (element.name && originalValues[element.name] !== undefined) {
+                            element.value = originalValues[element.name];
+                        }
+                    });
+                    saveButton.style.display = 'none';
+                });
+
+                // Dropdown Handling for PnP, Checkers, and Deeliver
+                const dropdowns = ['pnp-dropdown', 'checkers-dropdown', 'deeliver-dropdown'];
+                dropdowns.forEach(function (dropdownId) {
+                    const dropdown = document.getElementById(dropdownId);
+                    const detailsDiv = document.getElementById(`${dropdownId.split('-')[0]}-product-details`);
+                    const spinner = detailsDiv.querySelector('.product-spinner');
+
+                    dropdown.addEventListener('change', function () {
+                        const selectedCode = this.value;
+                        if (selectedCode) {
+                            spinner.style.display = 'block';
+                            const fetchUrl = {
+                                'pnp': pnpFetchProductDetailsUrl,
+                                'checkers': checkersFetchDetailsUrl,
+                                'deeliver': deeliverFetchDetailsUrl
+                            }[dropdownId.split('-')[0]];
+
+                            fetch(`${fetchUrl}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': '{{ csrf_token() }}' // Ensure CSRF token is included
+                                },
+                                body: JSON.stringify({
+                                    [dropdownId.split('-')[0] === 'pnp' ? 'product_code' : 'code']: selectedCode
+                                })
+                            })
+                                .then(response => response.json())
+                                .then(data => {
+                                    spinner.style.display = 'none';
+                                    if (data.success) {
+                                        // Populate the product details
+                                        detailsDiv.innerHTML = `
+                                        <p>Name: ${data.product_info.name}</p>
+                                        <p>Price: R${data.product_info.price}</p>
+                                        <!-- Add more fields as needed -->
+                                    `;
+                                        // Optionally, calculate and display price difference
+                                    } else {
+                                        detailsDiv.innerHTML = `<p>${data.message}</p>`;
+                                    }
+                                })
+                                .catch(error => {
+                                    spinner.style.display = 'none';
+                                    detailsDiv.innerHTML = `<p>Error fetching product details.</p>`;
+                                    console.error('Error:', error);
+                                });
+                        } else {
+                            detailsDiv.innerHTML = '';
+                        }
+                    });
+                });
+
+                // Top Search Button Functionality
+                const topSearchForm = document.getElementById('top-search-form');
+                topSearchForm.addEventListener('submit', function (e) {
+                    // Implement AJAX or allow form submission as needed
+                    // For example, to use AJAX:
+                    e.preventDefault();
+                    const searchTerm = document.getElementById('top-search-term').value;
+
+                    fetch('{{ url_for("main.search_main_inventory") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ search_term: searchTerm })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Handle successful search (e.g., display results)
+                                alert('Search successful!');
+                            } else {
+                                // Handle search failure (e.g., display message)
+                                alert(data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred during the search.');
+                        });
+                });
+
+                // Bottom Search Button Functionality
+                const bottomSearchForm = document.getElementById('bottom-search-form');
+                if (bottomSearchForm) {
+                    bottomSearchForm.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        const searchTerm = document.getElementById('bottom-search-term').value;
+
+                        fetch('{{ url_for("main.search_main_inventory") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({ search_term: searchTerm })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    // Handle successful search (e.g., display results)
+                                    alert('Bottom search successful!');
+                                } else {
+                                    // Handle search failure (e.g., display message)
+                                    alert(data.message);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('An error occurred during the bottom search.');
+                            });
+                    });
+                }
+        </script>
+    </div>
+</body>
+
+</html>

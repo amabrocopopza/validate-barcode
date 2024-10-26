@@ -11,12 +11,12 @@
 </head>
 
 <body>
-    <!-- Loading Spinner -->
+    <!-- Loading Spinner
     <div class="spinner-overlay" id="spinner" style="display: none;">
         <div class="spinner-border text-primary" role="status" style="width: 5rem; height: 5rem;">
             <span class="sr-only">Loading...</span>
         </div>
-    </div>
+    </div> -->
 
     <div class="container">
         <h1 class="text-center mt-4">Product Validation</h1>
@@ -72,10 +72,16 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="form-group">
+                    <label for="main-sku">SKU:</label>
+                    <input type="text" id="main-sku" class="form-control" value="{{ current_product_record.sku }}">
+                </div>
                 <div class="form-group">
                     <label for="main-barcode">Barcode:</label>
-                    <input type="text" id="main-barcode" class="form-control"
-                        value="{{ current_product_record.barcode }}" placeholder="Enter Barcode Manually">
+                    <input type="text" id="main-barcode" class="form-control" value=""
+                        placeholder="Enter Barcode Manually">
+
                 </div>
                 <!-- Additional fields as needed -->
                 <button id="save-changes-btn" class="btn btn-success">Save Changes</button>
@@ -105,18 +111,19 @@
                 <div class="card">
                     <div class="card-body">
                         <h3>PnP Products</h3>
+                        <!-- Dropdown and Product Details -->
                         <select id="pnp-dropdown" class="form-control">
-                            <option value="">-- Select a PnP Product --</option>
-                            {% if initial_suggestions %}
-                            {% for p in initial_suggestions %}
-                            <option value="{{ p.code }}">
-                                {{ p.name }} - {{ p.price }}
-                            </option>
-                            {% endfor %}
-                            {% endif %}
+                            <!-- Options -->
                         </select>
+                        <!-- Product Details -->
                         <div id="pnp-product-details" class="product-card">
-                            <!-- PnP product details will be displayed here -->
+                            <!-- Spinner -->
+                            <div class="product-spinner" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                            </div>
+                            <!-- Product details will be displayed here -->
                         </div>
                         <!-- Price Difference -->
                         <div id="pnp-price-difference" class="price-difference mt-2" style="display: none;">
@@ -131,12 +138,19 @@
                 <div class="card">
                     <div class="card-body">
                         <h3>Checkers Products</h3>
+                        <!-- Dropdown and Product Details -->
                         <select id="checkers-dropdown" class="form-control">
-                            <option value="">-- Select a Checkers Product --</option>
-                            <!-- Options will be populated via JavaScript -->
+                            <!-- Options -->
                         </select>
+                        <!-- Product Details -->
                         <div id="checkers-product-details" class="product-card">
-                            <!-- Checkers product details will be displayed here -->
+                            <!-- Spinner -->
+                            <div class="product-spinner" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                            </div>
+                            <!-- Product details will be displayed here -->
                         </div>
                         <!-- Price Difference -->
                         <div id="checkers-price-difference" class="price-difference mt-2" style="display: none;">
@@ -147,104 +161,71 @@
             </div>
         </div>
 
-        <!-- Average Price Section -->
-        <div id="average-price-section" class="mt-3" style="display: none;">
-            <h4>Average Price: <span id="average-price-value"></span></h4>
+
+        <!-- Deeliver Section -->
+        <div class="row mt-2">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Deeliver Products</h3>
+                        <!-- Dropdown and Product Details -->
+                        <select id="deeliver-dropdown" class="form-control">
+                            <!-- Options -->
+                        </select>
+                        <!-- Product Details -->
+                        <div id="deeliver-product-details" class="product-card">
+                            <!-- Spinner -->
+                            <div class="product-spinner" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                            </div>
+                            <!-- Product details will be displayed here -->
+                        </div>
+                        <!-- Price Difference -->
+                        <div id="deeliver-price-difference" class="price-difference mt-2" style="display: none;">
+                            <strong>Price Difference:</strong> <span id="deeliver-price-diff-value"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Percentage Adjustment Modal -->
-        <div class="modal fade" id="percentageModal" tabindex="-1" role="dialog" aria-labelledby="percentageModalLabel"
+        <!-- Image Modal -->
+        <div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel"
             aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" role="document">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="percentageModalLabel">Adjust Price Percentage</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
                     <div class="modal-body">
-                        <label for="percentage-slider">Percentage:</label>
-                        <input type="range" class="custom-range" id="percentage-slider" min="-50" max="50" step="1"
-                            value="15">
-                        <div id="percentage-value">15%</div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" id="apply-percentage-btn">Apply</button>
+                        <img src="" id="modal-image" class="modal-img" alt="Product Image">
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="action-buttons mt-4">
-            <form method="post" action="{{ url_for('main.process_product') }}" id="main-form">
-                <input type="hidden" name="sku" value="{{ current_product_record.sku }}">
-                <input type="hidden" name="product_name" id="form-product-name">
-                <input type="hidden" name="description" id="form-description">
-                <input type="hidden" name="brand_name" id="form-brand-name">
-                <input type="hidden" name="product_category" id="form-product-category">
-                <input type="hidden" name="price" id="form-price">
-                <input type="hidden" name="barcode" id="form-barcode">
+        <!-- Include JavaScript files -->
+        <!-- Define global variables for scripts.js -->
+        <script type="text/javascript">
+            var pnpFetchProductDetailsUrl = "{{ url_for('pnp.fetch_barcode') }}";
+            var pnpSearchUrl = "{{ url_for('pnp.search') }}";
+            var checkersFetchDetailsUrl = "{{ url_for('checkers.fetch_details') }}";
+            var checkersSearchUrl = "{{ url_for('checkers.search') }}";
+            var processProductUrl = "{{ url_for('main.process_product') }}";
+            var deeliverSearchUrl = "{{ url_for('deeliver.search') }}";
+            var deeliverFetchDetailsUrl = "{{ url_for('deeliver.fetch_details') }}"; <!-- Add this line -->
 
-                <!-- Action Buttons -->
-                <button type="submit" name="action" value="flag" id="flag-btn" class="btn btn-danger">Flag</button>
-                <button type="submit" name="action" value="skip" id="skip-btn" class="btn btn-secondary">Skip</button>
-            </form>
-        </div>
-
-        <!-- Progress Indicators at the Bottom -->
-        <div class="progress-indicators mt-5">
-            <div class="row">
-                <div class="col text-right">
-                    <p><strong>Products Remaining:</strong> {{ products_remaining }}</p>
-                </div>
-                <div class="col text-left">
-                    <p><strong>Products Processed:</strong> {{ products_processed }}</p>
-                </div>
-            </div>
-        </div>
-
-        {% if not product %}
-        <div class="alert alert-info" role="alert">
-            {{ message }}
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Image Modal -->
-    <div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <img src="" id="modal-image" class="modal-img" alt="Product Image">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Include JavaScript files -->
-    <!-- Define global variables for scripts.js -->
-    <script type="text/javascript">
-        var pnpFetchProductDetailsUrl = "{{ url_for('pnp.fetch_barcode') }}";
-        var pnpSearchUrl = "{{ url_for('pnp.search') }}";
-        var checkersFetchDetailsUrl = "{{ url_for('checkers.fetch_details') }}";
-        var checkersSearchUrl = "{{ url_for('checkers.search') }}";
-        var processProductUrl = "{{ url_for('main.process_product') }}";
-
-        window.initialProductName = "{{ current_product_record.product_name | escape }}";
-        window.initialDescription = "{{ current_product_record.description | striptags | escape }}";
-        window.initialBrandName = "{{ current_product_record.brand_name | escape }}";
-        window.initialProductCategory = "{{ current_product_record.product_category | escape }}";
-        window.initialPrice = "{{ current_product_record.retail_price | escape }}";
-    </script>
-    <!-- Include jQuery first -->
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <!-- Include Bootstrap JS and dependencies -->
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+            window.initialProductName = "{{ current_product_record.product_name | escape }}";
+            window.initialDescription = "{{ current_product_record.description | striptags | escape }}";
+            window.initialBrandName = "{{ current_product_record.brand_name | escape }}";
+            window.initialProductCategory = "{{ current_product_record.product_category | escape }}";
+            window.initialPrice = "{{ current_product_record.retail_price | escape }}";
+        </script>
+        <!-- Include jQuery first -->
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+        <!-- Include Bootstrap JS and dependencies -->
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.bundle.min.js"></script>
+        <!-- Custom JS -->
+        <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 </body>
 
 </html>
